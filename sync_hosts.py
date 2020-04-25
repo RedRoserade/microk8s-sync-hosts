@@ -32,7 +32,7 @@ def get_hosts(namespace='default'):
     services: List[V1Service] = v1_api.list_namespaced_service(namespace=namespace).items
 
     for service in services:
-        if service.spec.type != 'ClusterIP':
+        if not service.spec.cluster_ip:
             continue
 
         yield {'host': service.metadata.name, 'ip_address': service.spec.cluster_ip}
