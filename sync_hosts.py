@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import re
+import sys
 from typing import List
 
 import kubernetes
@@ -44,11 +45,11 @@ def read_hostsfile(hostsfile='/etc/hosts'):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host-pattern', required=True)
-    parser.add_argument('--in-hostsfile', default='/etc/hosts')
-    parser.add_argument('--out-hostsfile', default='/etc/hosts')
-    parser.add_argument('--default-ip-addr', default='127.0.0.1')
-    parser.add_argument('--namespace', default='default')
+    parser.add_argument('--host-pattern', required=True, help='Regular expression to whitelist services with.')
+    parser.add_argument('--in-hostsfile', default='/etc/hosts', help='Input hostsfile to read. Defaults to "/etc/hosts"')
+    parser.add_argument('--out-hostsfile', default='/etc/hosts', help='Output hostsfile. Pass "-" to write to stdout. Defaults to "/etc/hosts"')
+    parser.add_argument('--default-ip-addr', default='127.0.0.1', help='Default IP address for services and ingresses. ClusterIP services override this. Defaults to "127.0.0.1".')
+    parser.add_argument('--namespace', default='default', help='Namespace to get the services from. Defaults to "default"')
 
     args = parser.parse_args()
 
@@ -68,7 +69,7 @@ def main():
         if marker_line not in line:
             lines.append(line)
         else:
-            print(f'Removing: {line!r}')
+            print(f'Removing: {line!r}', file=sys.stderr)
 
     for ingress_host in host_ingresses:
         ip_addr = ingress_host.get('ip_address') or args.default_ip_addr
@@ -76,8 +77,11 @@ def main():
 
     hostsfile = '\n'.join(lines) + '\n'
 
-    with open(args.out_hostsfile, 'w') as hosts_writer:
-        hosts_writer.write(hostsfile)
+    if args.out_hostsfile == '-':
+        print(hostsfile)
+    else:
+        with open(args.out_hostsfile, 'w') as hosts_writer:
+            hosts_writer.write(hostsfile)
 
 
 if __name__ == "__main__":

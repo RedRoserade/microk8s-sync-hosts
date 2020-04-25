@@ -17,7 +17,7 @@ spec:
             image: localhost:32000/microk8s-sync-hosts
             imagePullPolicy: Always
             args:
-              - '--host-pattern=.+'
+              - '--host-pattern=<CHANGE ME>'
             volumeMounts:
               - mountPath: /etc/hosts
                 name: hostsfile
