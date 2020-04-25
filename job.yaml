@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-host-sync-job
+spec:
+  # Note, this will not work unless a TTL controller is installed!
+  # https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/#ttl-controller
+  ttlSecondsAfterFinished: 30
+  backoffLimit: 1
+  template:
+    metadata:
+      name: ingress-host-sync
+    spec:
+      containers:
+      - name: sync
+        image: localhost:32000/microk8s-sync-hosts
+        imagePullPolicy: Always
+        args:
+          - '--host-pattern=(\.noctis$|^cps-.+)'
+        volumeMounts:
+          - mountPath: /etc/hosts
+            name: hostsfile
+      volumes:
+        - name: hostsfile
+          hostPath:
+            path: /etc/hosts
+      restartPolicy: Never
