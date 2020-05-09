@@ -50,7 +50,7 @@ This will, by default, write to `/etc/hosts`, so you may need to run this with a
 
 ## Running in the cluster to synchronise the hostsfile
 
-You can use a `CronJob` for synchronising the hostsfile. See [cron-job.yaml](cron-job.yaml) for an example.
+You can use a `CronJob` for synchronising the hostsfile. See [cron-job.yaml](example-deployment-files/cron-job.yaml) for an example.
 
 To run this, you must build the image (see [build-and-push.sh](build-and-push.sh)) and push it to the cluster.
 

@@ -1,0 +1,80 @@
+# Deployment for k3s (https://k3s.io) in watch mode.
+# The contents are put in a 'dev-tools' namespace, and watch the 'default' namespace.
+# k3s seems to have stricter restrictions on service account permissions,
+# so it is required to create a ServiceAccount and ClusterRole for the Pod to be able to read the resources.
+# Edit this according to your needs.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-tools
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: svc-reader
+  namespace: dev-tools
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: dev-tools
+  name: svc-reader
+rules:
+- apiGroups: ["", "networking.k8s.io", "extensions"]
+  resources: ["services", "ingresses"]
+  verbs: ["get", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: svc-reader-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: svc-reader
+  namespace: dev-tools
+roleRef:
+  kind: ClusterRole
+  name: svc-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: host-sync
+  namespace: dev-tools
+  labels:
+    app: host-sync
+spec:
+  selector:
+    matchLabels:
+      app: host-sync
+  template:
+    metadata:
+      labels:
+        app: host-sync
+    spec:
+      serviceAccountName: svc-reader
+      automountServiceAccountToken: true
+      containers:
+      - name: host-sync
+        image: localhost:32000/host-sync
+        imagePullPolicy: Always
+        args:
+          - --host-pattern=.+
+          - --out-hostsfile=/etc/hosts
+          - --watch
+          - --namespace=default
+        resources:
+          limits:
+            memory: "32Mi"
+            cpu: "50m"
+        volumeMounts:
+          - mountPath: /etc/hosts
+            name: hosts-file-from-host
+      volumes:
+        - name: hosts-file-from-host
+          hostPath:
+            path: /etc/hosts
